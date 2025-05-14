@@ -4,6 +4,6 @@ from rest_framework.response import Response
 
 # Create your views here.
 
-@api_view(['GET'])
-def getRoutes(request):
+@api_view(['POST'])
+def create_user(request):
     return Response('Hello World')

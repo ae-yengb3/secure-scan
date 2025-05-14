@@ -50,7 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware'
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -107,6 +107,8 @@ AUTH_PASSWORD_VALIDATORS = [
 CORS_ORIGIN_WHITELIST = (
     'http://localhost:3000',
 )
+
+AUTH_USER_MODEL = 'secure.User'
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
