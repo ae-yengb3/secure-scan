@@ -36,4 +36,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+    
+
+class Scan(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    domain = models.CharField(max_length=100)
+    status = models.CharField(max_length=100)
+    start_time = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
