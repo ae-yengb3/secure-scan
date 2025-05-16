@@ -14,9 +14,14 @@ def create_user(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['get'])
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_user(request):
     user = request.user
     serializer = UserSerializer(user)
     return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def start_scan(request):
+    pass
