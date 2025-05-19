@@ -2,7 +2,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
-from secure.serializers import UserSerializer
+from secure.serializers import UserSerializer, ScanSerializer
 
 # Create your views here.
 
@@ -25,3 +25,10 @@ def get_user(request):
 @permission_classes([IsAuthenticated])
 def start_scan(request):
     pass
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_scan(request):
+    scans = request.user.scans.all()
+    serializer = ScanSerializer(scans, many=True)
+    return Response(serializer.data)

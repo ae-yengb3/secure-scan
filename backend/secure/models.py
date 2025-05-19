@@ -42,6 +42,7 @@ class Scan(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='scans')
     domain = models.CharField(max_length=100)
     status = models.CharField(max_length=100)
+    scan_id = models.CharField(max_length=100)
     start_time = models.DateTimeField(auto_now_add=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
