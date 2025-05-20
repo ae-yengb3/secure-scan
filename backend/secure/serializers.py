@@ -16,7 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
 class ScanSerializer(serializers.ModelSerializer):
     class Meta:
         model = Scan
-        fields = ['user', 'domain', 'status', 'start_time', 'timestamp']
+        fields = ['user', 'url', 'status', 'scan_id', 'start_time']
 
     def create(self, validated_data):
         scan = Scan.objects.create(**validated_data)
