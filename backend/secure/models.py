@@ -41,7 +41,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 class Scan(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='scans')
     url = models.CharField(max_length=100)
-    status = models.CharField(max_length=100)
     scan_id = models.CharField(max_length=100)
     progress = models.IntegerField(default=0)
     start_time = models.DateTimeField(auto_now_add=True)

@@ -32,7 +32,7 @@ def start_scan(request):
     scan_id = start_zap_scan(url)
     user = request.user
     serializer = ScanSerializer(
-        data={'user': user.id, 'url': url, "scan_id": scan_id, 'status': 'Running', 'start_time': datetime.now()})
+        data={'user': user.id, 'url': url, "scan_id": scan_id, 'start_time': datetime.now()})
     if serializer.is_valid():
         serializer.save()
     else:
@@ -43,7 +43,9 @@ def start_scan(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def get_scan(request):
+def get_scans(request):
     scans = request.user.scans.all()
     serializer = ScanSerializer(scans, many=True)
+
+    update_scans(serializer.data)
     return Response(serializer.data)
