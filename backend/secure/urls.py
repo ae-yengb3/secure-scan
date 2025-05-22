@@ -8,4 +8,5 @@ urlpatterns = [
     path('me/', views.get_user, name='get-user'),
     path('start/scan/', views.start_scan, name='start-scan'),
     path('scans/', views.get_scans, name='get-scan'),
+    path('reports/', views.get_report, name='get-reports'),
 ]

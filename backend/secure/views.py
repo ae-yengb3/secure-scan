@@ -49,3 +49,15 @@ def get_scans(request):
 
     update_scans(serializer.data)
     return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_report(request):
+    scans = request.user.scans.all()
+    serializer = ScanSerializer(scans, many=True)
+
+    print(serializer.data)
+
+    reports = get_reports(serializer.data)
+    return Response(reports)
