@@ -28,8 +28,10 @@ def get_user(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def start_scan(request):
-    url = request.data['targetUrl']
+    url = request.data['targetUrl'].strip()
     scan_id = start_zap_scan(url)
+    if scan_id is None:
+        return Response({'error': 'url_not_found'}, status=status.HTTP_400_BAD_REQUEST)
     user = request.user
     serializer = ScanSerializer(
         data={'user': user.id, 'url': url, "scan_id": scan_id, 'start_time': datetime.now()})
