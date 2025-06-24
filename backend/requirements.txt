@@ -3,3 +3,4 @@ djangorestframework
 django-cors-headers
 djangorestframework-simplejwt
 zaproxy
+python-owasp-zap-v2.4
