@@ -59,7 +59,6 @@ def get_report(request):
     scans = request.user.scans.all()
     serializer = ScanSerializer(scans, many=True)
 
-    print(serializer.data)
-
     reports = get_reports(serializer.data)
+
     return Response(reports)

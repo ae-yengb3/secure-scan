@@ -37,7 +37,7 @@ def update_scans(scans):
 def get_reports(scans):
     reports = []
     extra = {
-        "critial": 0,
+        "critical": 0,
         "high": 0,
         "medium": 0,
         "low": 0
@@ -52,7 +52,7 @@ def get_reports(scans):
             "vulnerabilities": 0,
             "progress": scan['progress'],
             "start_time": scan['start_time'],
-            "critial": 0,
+            "critical": 0,
             "high": 0,
             "medium": 0,
             "low": 0
@@ -71,8 +71,8 @@ def get_reports(scans):
                 report['low'] += 1
                 extra['low'] += 1
             elif alert['risk'] == "Critical":
-                report['critial'] += 1
-                extra['critial'] += 1
+                report['critical'] += 1
+                extra['critical'] += 1
             if alert['risk'] != "Informational":
                 report['vulnerabilities'] += 1
 
