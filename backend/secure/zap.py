@@ -55,7 +55,8 @@ def get_reports(scans):
             "critical": 0,
             "high": 0,
             "medium": 0,
-            "low": 0
+            "low": 0,
+            "informational": 0
         }
         alerts = zap.core.alerts(baseurl=scan_url)
         report['alerts'] = alerts
@@ -73,6 +74,8 @@ def get_reports(scans):
             elif alert['risk'] == "Critical":
                 report['critical'] += 1
                 extra['critical'] += 1
+            elif alert['risk'] == "Informational":
+                report['informational'] += 1
             if alert['risk'] != "Informational":
                 report['vulnerabilities'] += 1
 
