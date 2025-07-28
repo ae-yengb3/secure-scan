@@ -14,9 +14,11 @@ class UserSerializer(serializers.ModelSerializer):
         return user
     
 class ScanSerializer(serializers.ModelSerializer):
+    leak_data = serializers.JSONField(required=False)
+
     class Meta:
         model = Scan
-        fields = ['user', 'url', 'scan_id', 'start_time', 'progress']
+        fields = ['user', 'url', 'scan_id', 'start_time', 'progress', 'leak_data'] 
 
     def create(self, validated_data):
         scan = Scan.objects.create(**validated_data)

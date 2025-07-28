@@ -45,6 +45,7 @@ class Scan(models.Model):
     progress = models.IntegerField(default=0)
     start_time = models.DateTimeField(auto_now_add=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+    leak_data = models.JSONField(default=dict, blank=True, null=True)
 
     def __str__(self):
         return self.url
