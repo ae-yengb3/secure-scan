@@ -11,6 +11,7 @@ zap = ZAPv2(apikey='fd3m3utqhlj2i6o3i15dvlrlh2',
 
 api_key = ""
 
+
 def start_zap_scan(url):
     zap.urlopen(url)
     zap.spider.scan(url)
@@ -237,7 +238,7 @@ def structure_data(raw_data: dict) -> dict:
         result["description"] = "Sensitive information was detected."
 
     # Alert summary
-    result["alert"] = "Data Exposure: " + \
+    result["alert"] = "Data Exposure for: " + \
         (", ".join(leaked_items[:3]) +
          ("..." if len(leaked_items) > 3 else ""))
 
@@ -251,14 +252,11 @@ def structure_data(raw_data: dict) -> dict:
         result["param"] = "IP address"
 
     # Name
-    result["name"] = generate_name(leaked_items)
+    result["name"] = generate_name(
+        leaked_items, raw_data.get("email", [""])[0])
 
     # Solution
-    result["solution"] = (
-        "Immediately review and remove exposed sensitive data from public sources. "
-        "Implement strong access controls and encryption for stored data. Rotate any exposed credentials, "
-        "and notify affected users if applicable. Review data handling policies to prevent future leaks."
-    )
+    result["solution"] = generate_solution(leaked_items)
 
     # Reference
     result["confidence"] = "High"
@@ -281,14 +279,76 @@ def structure_data(raw_data: dict) -> dict:
     return result
 
 
-def generate_name(leaked_items: list) -> str:
-    if "password" in leaked_items or "hashed password" in leaked_items:
-        return "Credential Leak"
-    elif "email address" in leaked_items and "IP address" in leaked_items:
-        return "Email and IP Address Exposure"
-    elif "email address" in leaked_items:
-        return "Email Address Leak"
+def generate_name(leaked_items: list, email: str) -> str:
+    if "password" in leaked_items:
+        return f"Password Leak for {email}"
+    elif "hashed password" in leaked_items:
+        return f"Hashed Credentials Leak for {email}"
     elif "IP address" in leaked_items:
-        return "IP Address Exposure"
+        return f"IP Address Exposure for {email}"
+    elif "license plate" in leaked_items:
+        return f"License Plate Exposure for {email}"
+    elif "cryptocurrency address" in leaked_items:
+        return f"Crypto Address Leak for {email}"
+    elif "date of birth" in leaked_items:
+        return f"DOB Exposure for {email}"
+    elif "phone number" in leaked_items:
+        return f"Phone Number Exposure for {email}"
     else:
-        return "Sensitive Personal Data Exposure"
+        return f"Personal Data Exposure for {email}"
+
+
+def generate_solution(leaked_items: list) -> str:
+    parts = []
+
+    if "password" in leaked_items:
+        parts.append(
+            "Reset all exposed passwords immediately and enforce strong password policies."
+        )
+    if "hashed password" in leaked_items:
+        parts.append(
+            "Evaluate the strength of the hashing algorithm. If weak or unsalted, rehash all credentials with a secure algorithm like bcrypt or Argon2."
+        )
+    if "email address" in leaked_items:
+        parts.append(
+            "Monitor for phishing campaigns targeting exposed email addresses, and notify affected users."
+        )
+    if "IP address" in leaked_items:
+        parts.append(
+            "Check for unauthorized access attempts from exposed IPs and consider geoblocking or rate limiting."
+        )
+    if "date of birth" in leaked_items:
+        parts.append(
+            "Treat affected accounts as high-risk and consider additional verification steps."
+        )
+    if "license plate" in leaked_items:
+        parts.append(
+            "Ensure vehicle-related systems do not store PII without proper encryption and access controls."
+        )
+    if "phone number" in leaked_items:
+        parts.append(
+            "Advise affected users to be alert for SIM swapping and social engineering attacks."
+        )
+    if "physical address" in leaked_items:
+        parts.append(
+            "Notify users about the exposure and recommend reviewing physical security or identity monitoring services."
+        )
+    if "cryptocurrency address" in leaked_items:
+        parts.append(
+            "Warn users of targeted scams and phishing attempts related to their exposed wallet address."
+        )
+    if "social media handle" in leaked_items:
+        parts.append(
+            "Advise users to review privacy settings and monitor for impersonation attempts."
+        )
+    if "database name" in leaked_items:
+        parts.append(
+            "Ensure databases are not exposed over the internet and are protected by strong access controls and firewall rules."
+        )
+
+    # Fallback solution if no sensitive types are detected
+    if not parts:
+        parts.append(
+            "Review system configurations and data exposure points to identify and secure leaks.")
+
+    return " ".join(parts)
