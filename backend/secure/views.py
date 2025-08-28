@@ -32,71 +32,26 @@ def start_scan(request):
     url = request.data['targetUrl'].strip()
     scan_type = request.data['scanType'].strip()
 
-    print(url)
-    print(scan_type)
+    user = request.user
 
+    if scan_type == "Vuln":
+        if url is None:
+            return Response({'error': 'url_not_found'}, status=status.HTTP_400_BAD_REQUEST)
+
+        scan = start_zap_scan(url, user)
+
+        if scan is None:
+            return Response({'error': 'url_not_found'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'message': 'Scan started successfully', 'scan_id': scan})
+    elif scan_type == "Leak":
+        pass
+    elif scan_type == "Hybrid":
+        pass
+    else:
+        return Response({'error': 'Invalid scan type'}, status=status.HTTP_400_BAD_REQUEST)
 
     return Response({})
-
-    # user = request.user
-
-    # if scan_type == "Active":
-    #     leaks = get_leaks(url)
-
-    #     scan_id = uuid.uuid4().int
-
-    #     serializer = ScanSerializer(
-    #         data={
-    #             'user': user.id, 'url': url, "scan_id": scan_id, 'start_time': datetime.now(),
-    #             'leak_data': leaks
-    #         })
-
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #     else:
-    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    #     return Response({'scan_id': scan_id})
-
-    # elif scan_type == "Passive":
-    #     scan_id = start_zap_scan(url)
-
-    #     if scan_id is None:
-    #         return Response({'error': 'url_not_found'}, status=status.HTTP_400_BAD_REQUEST)
-    #     user = request.user
-    #     serializer = ScanSerializer(
-    #         data={
-    #             'user': user.id, 'url': url, "scan_id": scan_id, 'start_time': datetime.now(),
-    #             'leak_data': []
-    #         })
-
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #     else:
-    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    #     return Response({'scan_id': scan_id})
-
-    # else:
-    #     scan_id = start_zap_scan(url)
-
-    #     leaks = get_leaks(url)
-
-    #     if scan_id is None:
-    #         return Response({'error': 'url_not_found'}, status=status.HTTP_400_BAD_REQUEST)
-    #     user = request.user
-    #     serializer = ScanSerializer(
-    #         data={
-    #             'user': user.id, 'url': url, "scan_id": scan_id, 'start_time': datetime.now(),
-    #             'leak_data': leaks
-    #         })
-
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #     else:
-    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        # return Response({'scan_id': scan_id})
 
 
 @api_view(['GET'])
@@ -105,7 +60,7 @@ def get_scans(request):
     scans = request.user.scans.all()
     serializer = ScanSerializer(scans, many=True)
 
-    update_scans(serializer.data)
+    # update_scans(serializer.data)
     return Response(serializer.data)
 
 

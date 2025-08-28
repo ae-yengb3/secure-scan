@@ -43,9 +43,11 @@ class Scan(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='scans')
     url = models.CharField(max_length=100)
     scan_id = models.CharField(max_length=100, primary_key=True, default=uuid.uuid4)
-    zap_scan_id = models.CharField(max_length=100)
+    zap_scan_id = models.CharField(max_length=100, null=True, blank=True)
     progress = models.IntegerField(default=0)
+    remark = models.TextField(blank=True)
     start_time = models.DateTimeField(auto_now_add=True)
+    end_time = models.DateTimeField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

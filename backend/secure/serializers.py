@@ -4,6 +4,7 @@ from .models import Scan, ScanResult
 
 User = get_user_model()
 
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -12,13 +13,13 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
         return user
-    
-class ScanSerializer(serializers.ModelSerializer):
-    leak_data = serializers.JSONField(required=False)
 
+
+class ScanSerializer(serializers.ModelSerializer):
     class Meta:
         model = Scan
-        fields = ['user', 'url', 'scan_id', 'start_time', 'progress', 'leak_data'] 
+        fields = ["url", "user", "scan_id", "zap_scan_id",
+                  "progress", "remark", "start_time", "end_time", "timestamp"]
 
     def create(self, validated_data):
         scan = Scan.objects.create(**validated_data)

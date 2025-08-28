@@ -7,25 +7,64 @@ import requests
 from .models import Scan
 import time
 import os
+from datetime import datetime
+import threading
+
 
 zap = ZAPv2(apikey=os.getenv('ZAP_API_KEY'),
             proxies={'http': 'http://127.0.0.1:8080'})
 
 api_key = os.getenv('DEHASHED_API_KEY', '')
 
+def run_scans(scan_id: str):
+    scan = Scan.objects.get(scan_id=scan_id)
 
-def start_zap_scan(url):
-    zap.urlopen(url)
-    zap.spider.scan(url)
-    time.sleep(0.5)
-    scan_id = zap.ascan.scan(url)
+    scan.start_time = datetime.now()
+    scan.save()
 
-    if scan_id == 'url_not_found':
-        return None
+    # start with a spider scan
+    print(f"Starting spider scan for {scan.url}")
+    scan_id = zap.spider.scan(scan.url)
+    while (int(zap.spider.status(scan_id)) < 100):
+        print(f"Spider progress: {zap.spider.status(scan_id)}%")
+        scan.remark = "Spider scan in progress"
+        scan.progress = zap.spider.status(scan_id)
+        time.sleep(2)
 
-    print(f"[+]Scan ID: {scan_id} {url}")
+        scan.save()
 
-    return scan_id
+    print(f"Spider scan completed for {scan.url}")
+
+    # start with an active scan
+    print(f"Starting active scan for {scan.url}")
+    scan_id = zap.ascan.scan(scan.url)
+    while (int(zap.ascan.status(scan_id)) < 100):
+        print(f"Active scan progress: {zap.ascan.status(scan_id)}%")
+        scan.remark = "Active scan in progress"
+        scan.progress = zap.ascan.status(scan_id)
+        scan.save()
+        time.sleep(2)
+
+    print(f"Active scan completed for {scan.url}")
+
+    scan.progress = 100
+    scan.end_time = datetime.now()
+    scan.save()
+
+
+def start_zap_scan(url: str, user) -> str:
+    scan_model = ScanSerializer(
+        data={'user': user.id, 'url': url, "start_date": datetime.now()})
+
+    if scan_model.is_valid():
+        scan_model.save()
+
+        id = scan_model.data['scan_id']
+
+        t = threading.Thread(target=run_scans, args=(id,))
+        t.start()
+
+    return id
 
 
 def get_leaks(url: str):
