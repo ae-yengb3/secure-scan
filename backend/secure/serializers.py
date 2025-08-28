@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Scan
+from .models import Scan, ScanResult
 
 User = get_user_model()
 
@@ -23,3 +23,9 @@ class ScanSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         scan = Scan.objects.create(**validated_data)
         return scan
+
+
+class ScanResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ScanResult
+        fields = '__all__'
