@@ -64,6 +64,8 @@ class ScanResult(models.Model):
     ]
     
     scan = models.ForeignKey(Scan, on_delete=models.CASCADE, related_name='results')
+    id = models.AutoField(primary_key=True)
+    unique_id = models.CharField(max_length=100, blank=True)
     alert_name = models.CharField(max_length=255)
     risk = models.CharField(max_length=20, choices=RISK_CHOICES)
     confidence = models.CharField(max_length=20)
@@ -75,6 +77,8 @@ class ScanResult(models.Model):
     attack = models.TextField(blank=True)
     param = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    resolved = models.BooleanField(default=False)
+    marked_as_false_positive = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.alert_name} - {self.risk}"

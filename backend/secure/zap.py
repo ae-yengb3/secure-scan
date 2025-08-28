@@ -4,7 +4,7 @@ import nmap
 from urllib.parse import urlparse
 import ipaddress
 import requests
-from .models import Scan
+from .models import Scan, ScanResult
 import time
 import os
 from datetime import datetime
@@ -16,6 +16,31 @@ zap = ZAPv2(apikey=os.getenv('ZAP_API_KEY'),
 
 api_key = os.getenv('DEHASHED_API_KEY', '')
 
+def get_alerts(target: str, scan_id: str):
+    alerts = zap.core.alerts(baseurl=target)
+    scan = Scan.objects.get(scan_id=scan_id)
+    
+    for alert in alerts:
+        # Use ZAP's pluginid + messageid as unique identifier
+        unique_id = f"{alert.get('pluginId', '')}-{alert.get('messageId', '')}"
+        
+        # Check if this alert already exists for this scan
+        if not ScanResult.objects.filter(scan=scan, unique_id=unique_id).exists():
+            ScanResult.objects.create(
+                scan=scan,
+                unique_id=unique_id,
+                alert_name=alert.get('name', ''),
+                risk=alert.get('risk', 'Low'),
+                confidence=alert.get('confidence', ''),
+                url=alert.get('url', ''),
+                description=alert.get('description', ''),
+                solution=alert.get('solution', ''),
+                reference=alert.get('reference', ''),
+                evidence=alert.get('evidence', ''),
+                attack=alert.get('attack', ''),
+                param=alert.get('param', '')
+            )
+
 def run_scans(scan_id: str):
     scan = Scan.objects.get(scan_id=scan_id)
 
@@ -24,28 +49,31 @@ def run_scans(scan_id: str):
 
     # start with a spider scan
     print(f"Starting spider scan for {scan.url}")
-    scan_id = zap.spider.scan(scan.url)
-    while (int(zap.spider.status(scan_id)) < 100):
-        print(f"Spider progress: {zap.spider.status(scan_id)}%")
+    _scan_id = zap.spider.scan(scan.url)
+    while (int(zap.spider.status(_scan_id)) < 100):
+        print(f"Spider progress: {zap.spider.status(_scan_id)}%")
         scan.remark = "Spider scan in progress"
-        scan.progress = zap.spider.status(scan_id)
+        scan.progress = zap.spider.status(_scan_id)
         time.sleep(2)
-
+        get_alerts(scan.url, scan_id)
         scan.save()
 
     print(f"Spider scan completed for {scan.url}")
 
     # start with an active scan
     print(f"Starting active scan for {scan.url}")
-    scan_id = zap.ascan.scan(scan.url)
-    while (int(zap.ascan.status(scan_id)) < 100):
-        print(f"Active scan progress: {zap.ascan.status(scan_id)}%")
+    _scan_id = zap.ascan.scan(scan.url)
+    while (int(zap.ascan.status(_scan_id)) < 100):
+        print(f"Active scan progress: {zap.ascan.status(_scan_id)}%")
         scan.remark = "Active scan in progress"
-        scan.progress = zap.ascan.status(scan_id)
+        scan.progress = zap.ascan.status(_scan_id)
         scan.save()
+        get_alerts(scan.url, scan_id)
         time.sleep(2)
 
     print(f"Active scan completed for {scan.url}")
+    
+    get_alerts(scan.url, scan_id)
 
     scan.progress = 100
     scan.end_time = datetime.now()
