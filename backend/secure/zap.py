@@ -167,18 +167,14 @@ def update_scans(scans):
 
 def get_reports(scans):
     reports = []
-    extra = {
-        "critical": 0,
-        "high": 0,
-        "medium": 0,
-        "low": 0
-    }
+    extra = {"critical": 0, "high": 0, "medium": 0, "low": 0}
 
     for i, scan in enumerate(scans):
-        scan_url = scan['url']
+        alerts = ScanResult.objects.filter(scan_id=scan['scan_id'])
+        
         report = {
-            "url": scan_url,
-            "alerts": [],
+            "url": scan['url'],
+            "alerts": list(alerts.values()),
             "id": i,
             "vulnerabilities": 0,
             "progress": scan['progress'],
@@ -190,45 +186,17 @@ def get_reports(scans):
             "informational": 0
         }
 
-        try:
-            alerts = zap.core.alerts(baseurl=scan_url)
-            report['alerts'] = alerts
-        except Exception as e:
-            print("Error: ", e)
-            alerts = []
-            report['alerts'] = []
-
-        leaks = scan.get('leak_data', [])
-
-        for leak in leaks:
-            alert = structure_data(leak)
-
-            alerts.append(alert)
-
         for alert in alerts:
-            if alert['risk'] == "High":
-                report['high'] += 1
-                extra['high'] += 1
-            elif alert['risk'] == "Medium":
-                report['medium'] += 1
-                extra['medium'] += 1
-            elif alert['risk'] == "Low":
-                report['low'] += 1
-                extra['low'] += 1
-            elif alert['risk'] == "Critical":
-                report['critical'] += 1
-                extra['critical'] += 1
-            elif alert['risk'] == "Informational":
-                report['informational'] += 1
-            if alert['risk'] != "Informational":
+            risk = alert.risk.lower()
+            if risk in report:
+                report[risk] += 1
+                extra[risk] = extra.get(risk, 0) + 1
+            if risk != "informational":
                 report['vulnerabilities'] += 1
 
         reports.append(report)
 
-    return {
-        "reports": reports,
-        "extra": extra
-    }
+    return {"reports": reports, "extra": extra}
 
 
 def structure_data(raw_data: dict) -> dict:
