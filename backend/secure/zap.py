@@ -6,10 +6,12 @@ import ipaddress
 import requests
 from .models import Scan
 import time
-zap = ZAPv2(apikey='fd3m3utqhlj2i6o3i15dvlrlh2',
+import os
+
+zap = ZAPv2(apikey=os.getenv('ZAP_API_KEY'),
             proxies={'http': 'http://127.0.0.1:8080'})
 
-api_key = ""
+api_key = os.getenv('DEHASHED_API_KEY', '')
 
 
 def start_zap_scan(url):
