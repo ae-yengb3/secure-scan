@@ -9,6 +9,8 @@ import time
 import os
 from datetime import datetime
 import threading
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 zap = ZAPv2(apikey=os.getenv('ZAP_API_KEY'),
@@ -41,6 +43,18 @@ def get_alerts(target: str, scan_id: str):
                 param=alert.get('param', '')
             )
 
+def send_scan_update(user_id, scan_id, progress, remark):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f"user_{user_id}",
+        {
+            'type': 'scan_progress_update',
+            'scan_id': scan_id,
+            'progress': progress,
+            'remark': remark
+        }
+    )
+
 def run_scans(scan_id: str):
     scan = Scan.objects.get(scan_id=scan_id)
 
@@ -51,12 +65,14 @@ def run_scans(scan_id: str):
     print(f"Starting spider scan for {scan.url}")
     _scan_id = zap.spider.scan(scan.url)
     while (int(zap.spider.status(_scan_id)) < 100):
-        print(f"Spider progress: {zap.spider.status(_scan_id)}%")
+        progress = int(zap.spider.status(_scan_id))
+        print(f"Spider progress: {progress}%")
         scan.remark = "Spider scan in progress"
-        scan.progress = zap.spider.status(_scan_id)
-        time.sleep(2)
-        get_alerts(scan.url, scan_id)
+        scan.progress = progress
         scan.save()
+        send_scan_update(scan.user.id, scan_id, progress, "Spider scan in progress")
+        get_alerts(scan.url, scan_id)
+        time.sleep(2)
 
     print(f"Spider scan completed for {scan.url}")
 
@@ -64,10 +80,12 @@ def run_scans(scan_id: str):
     print(f"Starting active scan for {scan.url}")
     _scan_id = zap.ascan.scan(scan.url)
     while (int(zap.ascan.status(_scan_id)) < 100):
-        print(f"Active scan progress: {zap.ascan.status(_scan_id)}%")
+        progress = int(zap.ascan.status(_scan_id))
+        print(f"Active scan progress: {progress}%")
         scan.remark = "Active scan in progress"
-        scan.progress = zap.ascan.status(_scan_id)
+        scan.progress = progress
         scan.save()
+        send_scan_update(scan.user.id, scan_id, progress, "Active scan in progress")
         get_alerts(scan.url, scan_id)
         time.sleep(2)
 
@@ -76,8 +94,10 @@ def run_scans(scan_id: str):
     get_alerts(scan.url, scan_id)
 
     scan.progress = 100
+    scan.remark = "Scan completed"
     scan.end_time = datetime.now()
     scan.save()
+    send_scan_update(scan.user.id, scan_id, 100, "Scan completed")
 
 
 def start_zap_scan(url: str, user) -> str:
