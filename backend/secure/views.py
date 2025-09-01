@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from secure.serializers import UserSerializer, ScanSerializer
+from secure.models import ScanResult
 from secure.zap import *
 import uuid
 from datetime import datetime
@@ -73,3 +74,29 @@ def get_report(request):
     reports = get_reports(serializer.data)
 
     return Response(reports)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_resolved(request):
+    unique_id = request.data.get('unique_id')
+    try:
+        result = ScanResult.objects.get(unique_id=unique_id, scan__user=request.user)
+        result.resolved = True
+        result.save()
+        return Response({'message': 'Marked as resolved'})
+    except ScanResult.DoesNotExist:
+        return Response({'error': 'Result not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_false_positive(request):
+    unique_id = request.data.get('unique_id')
+    try:
+        result = ScanResult.objects.get(unique_id=unique_id, scan__user=request.user)
+        result.marked_as_false_positive = True
+        result.save()
+        return Response({'message': 'Marked as false positive'})
+    except ScanResult.DoesNotExist:
+        return Response({'error': 'Result not found'}, status=status.HTTP_404_NOT_FOUND)

@@ -183,7 +183,9 @@ def get_reports(scans):
             "high": 0,
             "medium": 0,
             "low": 0,
-            "informational": 0
+            "informational": 0,
+            "false_positive_count": alerts.filter(marked_as_false_positive=True).count(),
+            "resolved_count": alerts.filter(resolved=True).count()
         }
 
         for alert in alerts:

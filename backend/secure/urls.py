@@ -10,4 +10,6 @@ urlpatterns = [
     path('start/scan/', views.start_scan, name='start-scan'),
     path('scans/', views.get_scans, name='get-scan'),
     path('reports/', views.get_report, name='get-reports'),
+    path('mark-resolved/', views.mark_resolved, name='mark-vuln-resolved'),
+    path('mark-false-positive/', views.mark_false_positive, name='mark-vuln-false-positive'),
 ]
