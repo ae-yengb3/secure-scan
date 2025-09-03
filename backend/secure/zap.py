@@ -122,6 +122,7 @@ def run_leak_scan(scan_id: str):
     scan.save()
 
     url = scan.url
+    send_scan_update(scan.user.id, scan_id, 10, "Starting leak scan")
 
     type_url = get_url_type(url)
     if type_url == "Domain Name":
@@ -129,29 +130,42 @@ def run_leak_scan(scan_id: str):
         domain = parsed.hostname
 
         query = f"domain:{domain}"
+        send_scan_update(scan.user.id, scan_id, 30, "Searching for data leaks")
 
-        total = 0
-        data = v2_search(query, 1, 100, False, False, False)
-        total = data.get("total", 0)
-        total_fetched  = 100
-        progress = 0
-
-        print(data)
-
-        while total_fetched <= total:
-            data = v2_search(query, 1, 100, False, False, False)
-            total = data.get("total", 0)
-            total_fetched += 100
-            progress = min(90, int((total_fetched / total) * 100)) if total > 0 else 100
-            send_scan_update(scan.user.id, scan_id, progress, "Active scan in progress")
-            time.sleep(2)
-
+        data = v2_search(query, 1, 1000, False, False, False)
+        entries = data.get("entries", [])
+        
+        send_scan_update(scan.user.id, scan_id, 70, "Processing leak data")
+        
+        # Process each entry and create ScanResult
+        for i, entry in enumerate(entries):
+            structured = structure_data(entry)
+            
+            # Create unique ID for this leak entry
+            unique_id = f"leak-{scan_id}-{i}"
+            
+            # Check if this entry already exists
+            if not ScanResult.objects.filter(scan=scan, unique_id=unique_id).exists():
+                ScanResult.objects.create(
+                    scan=scan,
+                    unique_id=unique_id,
+                    alert_name=structured['name'],
+                    risk=structured['risk'],
+                    confidence=structured['confidence'],
+                    url=structured.get('url', scan.url),
+                    description=structured['description'],
+                    solution=structured['solution'],
+                    reference=structured.get('reference', ''),
+                    evidence=structured.get('evidence', ''),
+                    attack=structured.get('attack', ''),
+                    param=structured.get('param', '')
+                )
         
     scan.progress = 100
     scan.remark = "Scan completed"
     scan.end_time = datetime.now()
     scan.save()
-    return
+    send_scan_update(scan.user.id, scan_id, 100, "Leak scan completed")
 
 def start_leak_scan(url: str, user) -> str:
     scan_model = ScanSerializer(
@@ -223,7 +237,6 @@ def get_url_type(url: str):
         return "Domain Name"
     except Exception as e:
         return f"Error: {e}"
-
 
 def update_scans(scans):
     for scan in scans:
@@ -371,8 +384,10 @@ def structure_data(raw_data: dict) -> dict:
         result["param"] = "IP address"
 
     # Name
-    result["name"] = generate_name(
-        leaked_items, raw_data.get("email", [""])[0])
+    email_value = raw_data.get("email", "")
+    if isinstance(email_value, list):
+        email_value = email_value[0] if email_value else ""
+    result["name"] = generate_name(leaked_items, email_value)
 
     # Solution
     result["solution"] = generate_solution(leaked_items)
