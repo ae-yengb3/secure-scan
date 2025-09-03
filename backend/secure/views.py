@@ -46,7 +46,16 @@ def start_scan(request):
 
         return Response({'message': 'Scan started successfully', 'scan_id': scan})
     elif scan_type == "Leak":
-        pass
+        if url is None:
+            return Response({'error': 'url_not_found'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        scan = start_leak_scan(url, user)
+
+        if scan is None:
+            return Response({'error': 'url_not_found'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'message': 'Scan started successfully', 'scan_id': scan})
+        
     elif scan_type == "Hybrid":
         pass
     else:

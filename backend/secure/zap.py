@@ -115,6 +115,58 @@ def start_zap_scan(url: str, user) -> str:
     return id
 
 
+def run_leak_scan(scan_id: str):
+    scan = Scan.objects.get(scan_id=scan_id)
+
+    scan.start_time = datetime.now()
+    scan.save()
+
+    url = scan.url
+
+    type_url = get_url_type(url)
+    if type_url == "Domain Name":
+        parsed = urlparse(url)
+        domain = parsed.hostname
+
+        query = f"domain:{domain}"
+
+        total = 0
+        data = v2_search(query, 1, 100, False, False, False)
+        total = data.get("total", 0)
+        total_fetched  = 100
+        progress = 0
+
+        print(data)
+
+        while total_fetched <= total:
+            data = v2_search(query, 1, 100, False, False, False)
+            total = data.get("total", 0)
+            total_fetched += 100
+            progress = min(90, int((total_fetched / total) * 100)) if total > 0 else 100
+            send_scan_update(scan.user.id, scan_id, progress, "Active scan in progress")
+            time.sleep(2)
+
+        
+    scan.progress = 100
+    scan.remark = "Scan completed"
+    scan.end_time = datetime.now()
+    scan.save()
+    return
+
+def start_leak_scan(url: str, user) -> str:
+    scan_model = ScanSerializer(
+        data={'user': user.id, 'url': url, "start_date": datetime.now()})
+    
+    if scan_model.is_valid():
+        scan_model.save()
+
+        id = scan_model.data['scan_id']
+
+        t = threading.Thread(target=run_leak_scan, args=(id,))
+        t.start()
+
+    return id
+
 def get_leaks(url: str):
     if url == "":
         return []
@@ -127,7 +179,15 @@ def get_leaks(url: str):
 
         query = f"domain:{domain}"
 
+        total = 0
         data = v2_search(query, 1, 100, False, False, False)
+        total = data.get("total", 0)
+        total_fetched  = 100
+
+        while total_fetched <= total:
+            data = v2_search(query, 1, 100, False, False, False)
+            total_fetched += 100
+
         return data.get("entries", [])
 
     return []
