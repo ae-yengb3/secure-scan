@@ -132,7 +132,7 @@ def run_leak_scan(scan_id: str):
         query = f"domain:{domain}"
         send_scan_update(scan.user.id, scan_id, 30, "Searching for data leaks")
 
-        data = v2_search(query, 1, 1000, False, False, False)
+        data = v2_search(query, 1, 100, False, False, False)
         entries = data.get("entries", [])
         
         send_scan_update(scan.user.id, scan_id, 70, "Processing leak data")
@@ -179,6 +179,92 @@ def start_leak_scan(url: str, user) -> str:
         t = threading.Thread(target=run_leak_scan, args=(id,))
         t.start()
 
+    return id
+
+def run_hybrid_scan(scan_id: str):
+    scan = Scan.objects.get(scan_id=scan_id)
+    scan.start_time = datetime.now()
+    scan.save()
+    
+    send_scan_update(scan.user.id, scan_id, 5, "Starting hybrid scan")
+    
+    # Run vulnerability scan
+    send_scan_update(scan.user.id, scan_id, 10, "Starting vulnerability scan")
+    
+    # Spider scan
+    _scan_id = zap.spider.scan(scan.url)
+    while (int(zap.spider.status(_scan_id)) < 100):
+        progress = int(zap.spider.status(_scan_id))
+        scan.progress = 10 + (progress * 0.3)  # 10-40%
+        scan.remark = "Spider scan in progress"
+        scan.save()
+        send_scan_update(scan.user.id, scan_id, scan.progress, "Spider scan in progress")
+        get_alerts(scan.url, scan_id)
+        time.sleep(2)
+    
+    # Active scan
+    _scan_id = zap.ascan.scan(scan.url)
+    while (int(zap.ascan.status(_scan_id)) < 100):
+        progress = int(zap.ascan.status(_scan_id))
+        scan.progress = 40 + (progress * 0.3)  # 40-70%
+        scan.remark = "Active scan in progress"
+        scan.save()
+        send_scan_update(scan.user.id, scan_id, scan.progress, "Active scan in progress")
+        get_alerts(scan.url, scan_id)
+        time.sleep(2)
+    
+    # Leak scan
+    send_scan_update(scan.user.id, scan_id, 70, "Starting leak scan")
+    
+    type_url = get_url_type(scan.url)
+    if type_url == "Domain Name":
+        parsed = urlparse(scan.url)
+        domain = parsed.hostname
+        query = f"domain:{domain}"
+        
+        data = v2_search(query, 1, 100, False, False, False)
+        entries = data.get("entries", [])
+        
+        send_scan_update(scan.user.id, scan_id, 85, "Processing leak data")
+        
+        for i, entry in enumerate(entries):
+            structured = structure_data(entry)
+            unique_id = f"leak-{scan_id}-{i}"
+            
+            if not ScanResult.objects.filter(scan=scan, unique_id=unique_id).exists():
+                ScanResult.objects.create(
+                    scan=scan,
+                    unique_id=unique_id,
+                    alert_name=structured['name'],
+                    risk=structured['risk'],
+                    confidence=structured['confidence'],
+                    url=structured.get('url', scan.url),
+                    description=structured['description'],
+                    solution=structured['solution'],
+                    reference=structured.get('reference', ''),
+                    evidence=structured.get('evidence', ''),
+                    attack=structured.get('attack', ''),
+                    param=structured.get('param', '')
+                )
+    
+    scan.progress = 100
+    scan.remark = "Hybrid scan completed"
+    scan.end_time = datetime.now()
+    scan.save()
+    send_scan_update(scan.user.id, scan_id, 100, "Hybrid scan completed")
+
+def start_hybrid_scan(url: str, user) -> str:
+    scan_model = ScanSerializer(
+        data={'user': user.id, 'url': url, "start_date": datetime.now()})
+    
+    if scan_model.is_valid():
+        scan_model.save()
+        
+        id = scan_model.data['scan_id']
+        
+        t = threading.Thread(target=run_hybrid_scan, args=(id,))
+        t.start()
+    
     return id
 
 def get_leaks(url: str):

@@ -57,7 +57,15 @@ def start_scan(request):
         return Response({'message': 'Scan started successfully', 'scan_id': scan})
         
     elif scan_type == "Hybrid":
-        pass
+        if url is None:
+            return Response({'error': 'url_not_found'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        scan = start_hybrid_scan(url, user)
+
+        if scan is None:
+            return Response({'error': 'url_not_found'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'message': 'Hybrid scan started successfully', 'scan_id': scan})
     else:
         return Response({'error': 'Invalid scan type'}, status=status.HTTP_400_BAD_REQUEST)
 
