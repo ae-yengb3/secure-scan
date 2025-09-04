@@ -1,6 +1,5 @@
 from zapv2 import ZAPv2
 from secure.serializers import ScanSerializer
-import nmap
 from urllib.parse import urlparse
 import ipaddress
 import requests

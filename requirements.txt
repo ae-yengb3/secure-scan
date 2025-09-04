@@ -8,3 +8,4 @@ python-dotenv
 channels
 channels-redis
 daphne
+google-genai
