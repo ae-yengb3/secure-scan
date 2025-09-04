@@ -29,6 +29,8 @@ class SecureConsumer(AsyncWebsocketConsumer):
             
             if message_type == 'scan_update':
                 await self.handle_scan_update(data)
+            elif message_type == 'chat_message':
+                await self.handle_chat_message(data)
             else:
                 await self.send(text_data=json.dumps({
                     'type': 'error',
@@ -65,6 +67,30 @@ class SecureConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Scan not found or access denied'
+            }))
+    
+    async def handle_chat_message(self, data):
+        message = data.get('message', '')
+        selected_vulnerabilities = data.get('selectedVulnerabilities', [])
+        context = data.get('context', '')
+        previousMessages = data.get('previousMessages', [])
+        
+        from channels.db import database_sync_to_async
+        from .assistant import get_ai_response
+        
+        try:
+            response = await database_sync_to_async(get_ai_response)(
+                message, selected_vulnerabilities, context, previousMessages
+            )
+            await self.send(text_data=json.dumps({
+                'type': 'chat_response',
+                'message': response,
+                'timestamp': data.get('timestamp')
+            }))
+        except Exception as e:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': f'AI assistant error: {str(e)}'
             }))
     
     async def scan_progress_update(self, event):
