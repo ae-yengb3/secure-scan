@@ -43,6 +43,10 @@ def get_alerts(target: str, scan_id: str):
             )
 
 def send_scan_update(user_id, scan_id, progress, remark):
+    # Get all scans for the user
+    user_scans = Scan.objects.filter(user_id=user_id)
+    scans_data = ScanSerializer(user_scans, many=True).data
+    
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
         f"user_{user_id}",
@@ -50,7 +54,8 @@ def send_scan_update(user_id, scan_id, progress, remark):
             'type': 'scan_progress_update',
             'scan_id': scan_id,
             'progress': progress,
-            'remark': remark
+            'remark': remark,
+            'all_scans': scans_data
         }
     )
 
